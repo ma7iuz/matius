@@ -1,0 +1,407 @@
+{
+	"info": {
+		"_postman_id": "f1082373-8cdf-4094-aca3-4c0cf5a36297",
+		"name": "QwikGifts Oauth2.0 DANA",
+		"description": "- In this protocol authentication is done via Authorization header and the header will contain Bearer token.\n- The Api endpoints remain unchanged, based on the header OAuth1/OAuth2 authentications are initited.\n- Along with bearer header partners are expected to mandatorily send `dateAtClient` and `signature` headers, which are used to check API integrity between Woohoo server and Partner.\n- Authentication via Oauth2.0 section describes the requests required to genarate Bearer token.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Generate Authorization Code",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    let res = JSON.parse(responseBody);",
+							"    pm.environment.set(\"authorizationCode\", res.authorizationCode);",
+							"});"
+						],
+						"type": "text/javascript",
+						"id": "759e16bc-8769-4574-bf91-b0b6616bf874"
+					}
+				}
+			],
+			"_postman_id": "ce31f26c-a390-40cb-9a7f-ef5655c0efc5",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "oauth2",
+					"oauth2": {
+						"addTokenTo": "queryParams"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clientId\": \"{{clientId}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+					"options": {}
+				},
+				"url": "{{host}}/oauth2/verify",
+				"description": "- This API used to generate authorization code which is required for Generate Bearer Token API\n- clientId , username and password are passed in the request body , if verified woohoo responds with authorization code"
+			},
+			"response": []
+		},
+		{
+			"name": "Authorization Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    let res = JSON.parse(responseBody);",
+							"    pm.environment.set(\"bearerToken\", res.token);",
+							"});"
+						],
+						"type": "text/javascript",
+						"id": "4d61f56c-e772-4a69-8ad7-2422eecbabd9"
+					}
+				}
+			],
+			"_postman_id": "0ffc752f-a45b-4359-8f04-db832c463fa5",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"clientId\": \"{{clientId}}\",\n \"clientSecret\": \"{{clientSecret}}\",\n \"authorizationCode\": \"{{authorizationCode}}\"\n}",
+					"options": {}
+				},
+				"url": "{{host}}/oauth2/token",
+				"description": "- The api can be used to generate the Bearer token , which needs to be passed in all Apis\n- The api expects clientId , clientSecret and Authorization Code in the request body and responds with Bearer token\n- Access token has expiry of one week , which will require regenration once expired"
+			},
+			"response": []
+		},
+		{
+			"name": "Category list",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"pm.test(\"signature is valid\", function () {",
+							"    // This is postman pre request script, change code wherever we used `pm`",
+							"    const cryptoJS = require(\"crypto-js\");",
+							"           ",
+							"    //url and sorted query param",
+							"    let requestUrl = () => {",
+							"        let query = {};",
+							"       ",
+							"        //pm.request.url.getQueryString() is postman method to  ",
+							"        if (pm.request.url.getQueryString()) {",
+							"            let baseUrl = request.url.split('?'),",
+							"                ordered = {};",
+							"           ",
+							"            baseUrl = normaliseBaseUrl(baseUrl[0]);",
+							"            // pm.request.url.query.all() is postman method to get query parameters",
+							"            pm.request.url.query.all().forEach((param) => { query[param.key] = param.value})",
+							"       ",
+							"            Object.keys(query).sort().forEach(function(key) {",
+							"                ordered[key] = query[key];",
+							"            });",
+							"           ",
+							"            let queryString = Object.keys(ordered).map(key => key + '=' + ordered[key]).join('&');",
+							"            query = baseUrl + '?' + queryString;",
+							"        }",
+							"        else {",
+							"            query = request.url;",
+							"        }",
+							"       ",
+							"        return encodeURIComponent(query);",
+							"    }",
+							"   ",
+							"   let sortObject = (object) =>  {",
+							"       if (object instanceof Array) {",
+							"            var sortedObj = [],",
+							"            keys = Object.keys(object);",
+							"        } else {",
+							"            sortedObj = {},",
+							"            keys = Object.keys(object);",
+							"        }",
+							"",
+							"        keys.sort(function(key1, key2) {",
+							"            if(key1 < key2) return -1;",
+							"            if(key1 > key2) return 1;",
+							"            return 0;",
+							"        });",
+							"",
+							"        for(var index in keys){",
+							"            var key = keys[index];",
+							"            if(object[key] !== null && typeof object[key] == 'object' ){",
+							"",
+							"                if ((object[key] instanceof Array)) {",
+							"                    sortedObj[key] = sortObject(object[key]);",
+							"                }",
+							"                sortedObj[key] = sortObject(object[key]);",
+							"            } else {",
+							"                sortedObj[key] = object[key];",
+							"            }",
+							"        }",
+							"",
+							"        return sortedObj;",
+							"    }",
+							"   ",
+							"    let normaliseBaseUrl = (baseUrl) => {",
+							"        let normalizedPort,",
+							"            normalizedUrl,",
+							"            data = baseUrl.split(':'),",
+							"            scheme = data[0].toLowerCase();",
+							"           ",
+							"        if (pm.request.url.port == 80 && scheme == 'http') {",
+							"            normalizedPort = data[2].substring(2);    ",
+							"        }",
+							"        else if (pm.request.url.port == 443 && scheme == 'https') {",
+							"            normalizedPort = data[2].substring(2);    ",
+							"        }",
+							"       ",
+							"        if (normalizedPort) {",
+							"            normalizedUrl = scheme + ':' + data[1] + normalizedPort;",
+							"        }",
+							"        else if (data[2]) {",
+							"            normalizedUrl = scheme + ':' + data[1] + ':' + data[2];",
+							"        }",
+							"        else {",
+							"            normalizedUrl = scheme + ':' + data[1];",
+							"        }",
+							"        return normalizedUrl;",
+							"    }",
+							"   ",
+							"    let query = null,",
+							"        url = null;",
+							"        data = null;",
+							"        url = requestUrl(), // This is postman method to get request URL",
+							"        method = request.method,",
+							"        key = pm.variables.get(\"clientSecret\"), // This is postman method the get consumer sceret",
+							"        body = JSON.parse(responseBody);",
+							"        requestData = null;",
+							"       ",
+							"    if(body) {",
+							"        responseData = encodeURIComponent(JSON.stringify(sortObject(body)));",
+							"    }",
+							"   ",
+							"    let baseString = method + '&' + url + '&' + responseData;",
+							"    var sha512 = CryptoJS.HmacSHA512(baseString, key);",
+							"    if (postman.getResponseHeader(\"signature\") == sha512.toString()) {",
+							"         pm.expect(true).to.be.true;",
+							"    } else {",
+							"        pm.expect(false).to.be.true;",
+							"    }",
+							" ",
+							"});"
+						],
+						"type": "text/javascript",
+						"id": "f79e09b3-0159-4ba3-8821-08ee22378d2b"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// dateAtClient",
+							"const moment = require('moment');",
+							"pm.environment.set(\"dateAtClient\", moment().toISOString());",
+							"",
+							"console.log(request);",
+							"",
+							"// signature",
+							"",
+							"// This is postman pre request script, change code wherever we used `pm`",
+							"const cryptoJS = require(\"crypto-js\");",
+							"",
+							"//url and sorted query param",
+							"let requestUrl = () => {",
+							"    let query = {},",
+							"        url = request.url.replace('{{host}}', pm.environment.get(\"host\"));",
+							"",
+							"    //pm.request.url.getQueryString() is postman method to  ",
+							"    if (pm.request.url.getQueryString()) {",
+							"        let baseUrl = url.split('?'),",
+							"            ordered = {};",
+							"",
+							"        baseUrl = normaliseBaseUrl(baseUrl[0]);",
+							"        console.log('baseuel' + baseUrl);",
+							"        // pm.request.url.query.all() is postman method to get query parameters",
+							"        pm.request.url.query.all().forEach((param) => { query[param.key] = param.value})",
+							"",
+							"        Object.keys(query).sort().forEach(function(key) {",
+							"            ordered[key] = query[key];",
+							"        });",
+							"",
+							"        let queryString = Object.keys(ordered).map(key => key + '=' + ordered[key]).join('&');",
+							"        query = baseUrl + '?' + queryString;",
+							"    }",
+							"    else {",
+							"        query = url;",
+							"    }",
+							"    return encodeURIComponent(query);",
+							"}",
+							"",
+							"let sortObject = (object) =>  {",
+							"    if (object instanceof Array) {",
+							"        var sortedObj = [],",
+							"            keys = Object.keys(object);",
+							"    }",
+							"    else {",
+							"        sortedObj = {},",
+							"            keys = Object.keys(object);",
+							"    }",
+							"",
+							"    keys.sort(function(key1, key2) {",
+							"        if(key1 < key2) return -1;",
+							"        if(key1 > key2) return 1;",
+							"        return 0;",
+							"    });",
+							"",
+							"    for(var index in keys){",
+							"        var key = keys[index];",
+							"        if(typeof object[key] == 'object' ){",
+							"",
+							"            if ((object[key] instanceof Array)) {",
+							"                sortedObj[key] = sortObject(object[key]);",
+							"            }",
+							"            sortedObj[key] = sortObject(object[key]);",
+							"        } else {",
+							"            sortedObj[key] = object[key];",
+							"        }",
+							"    }",
+							"    return sortedObj;",
+							"}",
+							"",
+							"let normaliseBaseUrl = (baseUrl) => {",
+							"    let normalizedPort,",
+							"        normalizedUrl,",
+							"        data = baseUrl.split(':'),",
+							"        scheme = data[0].toLowerCase();",
+							"",
+							"    if (pm.request.url.port == 80 && scheme == 'http') {",
+							"        normalizedPort = data[2].substring(2);",
+							"    }",
+							"    else if (pm.request.url.port == 443 && scheme == 'https') {",
+							"        normalizedPort = data[2].substring(2);",
+							"    }",
+							"",
+							"    if (normalizedPort) {",
+							"        normalizedUrl = scheme + ':' + data[1] + normalizedPort;",
+							"    }",
+							"    else if (data[2]) {",
+							"        normalizedUrl = scheme + ':' + data[1] + ':' + data[2];",
+							"    }",
+							"    else {",
+							"        normalizedUrl = scheme + ':' + data[1];",
+							"    }",
+							"    return normalizedUrl;",
+							"}",
+							"",
+							"let query = null,",
+							"    url = null;",
+							"data = null;",
+							"url = requestUrl(), // This is postman method to get request URL",
+							"    method = request.method,",
+							"    key = pm.variables.get(\"clientSecret\"), // This is postman method the get consumer sceret",
+							"    body = null",
+							"requestData = null;",
+							"",
+							"if (!_.isEmpty(request.data)) {",
+							"    body = JSON.parse(request.data);",
+							"}",
+							"",
+							"let baseString = method + '&' + url;",
+							"if (body) {",
+							"    requestData = encodeURIComponent(JSON.stringify(sortObject(body)));",
+							"    baseString = method + '&' + url + '&' + requestData;",
+							"}",
+							"",
+							"//setting it into environmental variable",
+							"pm.environment.set(\"signature\", cryptoJS.HmacSHA512(baseString, key).toString());"
+						],
+						"type": "text/javascript",
+						"id": "da7b39ad-e435-484d-a42d-a7217f384655"
+					}
+				}
+			],
+			"_postman_id": "49e4f882-7714-49c6-9b6d-f8b0360b94d8",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "{{bearerToken}}"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "*/*",
+						"type": "text"
+					},
+					{
+						"key": "dateAtClient",
+						"value": "{{dateAtClient}}",
+						"type": "text"
+					},
+					{
+						"key": "signature",
+						"value": "{{signature}}",
+						"type": "text"
+					}
+				],
+				"url": "{{host}}/rest/v3/catalog/categories/214",
+				"description": "- This API is used to retrieve details of the category that are enabled for your account.\n- If would like retrieve specific category details then provide category id, else it can be a optional one.\n- Category list API must be called periodically i.e. once a month. If there are changes such as addition of new product on the store, then Woohoo will inform integrator about the impact of change. Post confirmation from Woohoo, call Category List API, and then refresh the database"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				],
+				"id": "a115c9ad-835c-46c6-836b-dd78c7971978"
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				],
+				"id": "77bdb4f2-95f2-49df-925c-4e0b951168b0"
+			}
+		}
+	]
+}
