@@ -374,7 +374,7 @@
 						"type": "text"
 					}
 				],
-				"url": "{{host}}/rest/v3/catalog/categories/213",
+				"url": "{{host}}/rest/v3/catalog/categories/214",
 				"description": "- This API is used to retrieve details of the category that are enabled for your account.\n- If would like retrieve specific category details then provide category id, else it can be a optional one.\n- Category list API must be called periodically i.e. once a month. If there are changes such as addition of new product on the store, then Woohoo will inform integrator about the impact of change. Post confirmation from Woohoo, call Category List API, and then refresh the database"
 			},
 			"response": []
